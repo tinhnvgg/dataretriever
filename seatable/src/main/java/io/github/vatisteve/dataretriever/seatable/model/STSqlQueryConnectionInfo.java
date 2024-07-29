@@ -1,4 +1,4 @@
-package io.github.vatisteve.seatable.retriever.model;
+package io.github.vatisteve.dataretriever.seatable.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

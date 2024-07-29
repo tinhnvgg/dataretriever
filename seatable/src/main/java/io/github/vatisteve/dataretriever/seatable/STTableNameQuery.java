@@ -1,9 +1,9 @@
-package io.github.vatisteve.seatable.retriever;
+package io.github.vatisteve.dataretriever.seatable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import io.github.vatisteve.seatable.retriever.model.STTableNameConnectionInfo;
+import io.github.vatisteve.dataretriever.seatable.model.STTableNameConnectionInfo;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
