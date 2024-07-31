@@ -37,6 +37,7 @@ public abstract class STConnector {
     protected final UnaryOperator<String> stAuth = s -> String.format("Bearer %s", s);
 
     protected STConnector(STConnectionInfo connectionInfo) throws IOException, InterruptedException {
+        log.debug("Init connection to {} SeaTable version {}", connectionInfo.getUrl(), connectionInfo.getVersion());
         client  = HttpClient.newHttpClient();
         // add http client configuration if needed
         //...

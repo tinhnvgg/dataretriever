@@ -30,11 +30,15 @@ public class STSqlQuery extends STConnector {
 
     @Override
     protected CompletableFuture<ArrayNode> requestData() {
-        String urlFormat = "%s/api-gateway/api/v2/dtables/%s/sql";
-        URI uri = URI.create(String.format(urlFormat, connectionInfo.getUrl(), baseInfo.getUuid()));
-        JsonNode queryBody = mapper.createObjectNode()
-            .put("sql", connectionInfo.getQuery())
-            .put("convert_keys", true);
+        String urlFormat = "%s%s%s/sql";
+        URI uri = URI.create(String.format(urlFormat,
+                connectionInfo.getUrl(), connectionInfo.getVersion().getDtablePath(), baseInfo.getUuid()
+        ));
+        ObjectNode queryBody = mapper.createObjectNode()
+            .put("sql", connectionInfo.getQuery());
+        if (connectionInfo.getVersion().isSupportConvertKeys()) {
+            queryBody.put("convert_keys", true);
+        }
         HttpRequest request = HttpRequest.newBuilder(uri)
             .header("Accept", "application/json")
             .header("Content-Type", "application/json")

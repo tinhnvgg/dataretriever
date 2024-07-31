@@ -90,10 +90,14 @@ public class STTableNameQuery extends STConnector {
 
     private CompletableFuture<ArrayNode> doRequest(long start, int limit) {
         // should use URI builder
-        String uriFormat = "%s/api-gateway/api/v2/dtables/%s/rows/?table_name=%s&start=%d&limit=%d&convert_keys=true";
+        String uriFormat = "%s%s%s/rows/?table_name=%s&start=%d&limit=%d";
+        if (connectionInfo.getVersion().isSupportConvertKeys()) {
+            uriFormat = uriFormat + "&convert_keys=true";
+        }
         URI uri = URI.create(
-            String.format(
-                uriFormat, connectionInfo.getUrl(), baseInfo.getUuid(), connectionInfo.getTableName(), start, limit
+            String.format(uriFormat,
+                    connectionInfo.getUrl(), connectionInfo.getVersion().getDtablePath(),
+                    baseInfo.getUuid(), connectionInfo.getTableName(), start, limit
             )
         );
         HttpRequest request = HttpRequest.newBuilder()
