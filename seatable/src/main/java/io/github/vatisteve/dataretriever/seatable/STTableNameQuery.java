@@ -96,7 +96,7 @@ public class STTableNameQuery extends STConnector {
         }
         URI uri = URI.create(
             String.format(uriFormat,
-                    connectionInfo.getUrl(), connectionInfo.getVersion().getDtablePath(),
+                    connectionInfo.getUrl(), connectionInfo.getVersion().getTablePath(),
                     baseInfo.getUuid(), connectionInfo.getTableName(), start, limit
             )
         );

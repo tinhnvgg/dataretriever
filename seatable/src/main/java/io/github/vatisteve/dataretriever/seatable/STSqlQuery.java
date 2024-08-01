@@ -32,7 +32,7 @@ public class STSqlQuery extends STConnector {
     protected CompletableFuture<ArrayNode> requestData() {
         String urlFormat = "%s%s%s/sql";
         URI uri = URI.create(String.format(urlFormat,
-                connectionInfo.getUrl(), connectionInfo.getVersion().getDtablePath(), baseInfo.getUuid()
+                connectionInfo.getUrl(), connectionInfo.getVersion().getTablePath(), baseInfo.getUuid()
         ));
         ObjectNode queryBody = mapper.createObjectNode()
             .put("sql", connectionInfo.getQuery());
