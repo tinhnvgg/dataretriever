@@ -1,6 +1,7 @@
 package io.github.vatisteve.dataretriever.seatable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -30,14 +31,14 @@ import java.util.concurrent.CompletableFuture;
 public abstract class STConnector {
 
     protected final HttpClient client;
+    protected final ObjectMapper mapper;
     @Getter
     protected STBase baseInfo;
-    protected ObjectMapper mapper = new ObjectMapper();
 
     public static final String SEA_TABLE_PROPERTIES_PREFIX = "_";
 
     protected static String stAuth(String auth) {
-        return String.format("Bearer %s", auth);
+        return Constants.AUTH_HEADER_PREFIX + auth;
     }
 
     protected static String encode(String s) {
@@ -49,6 +50,8 @@ public abstract class STConnector {
         client  = HttpClient.newHttpClient();
         // add http client configuration if needed
         //...
+        mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         initBaseInfo(connectionInfo);
     }
 

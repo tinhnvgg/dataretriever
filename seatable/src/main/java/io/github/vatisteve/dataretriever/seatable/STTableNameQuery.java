@@ -171,7 +171,7 @@ public class STTableNameQuery extends STConnector {
         }
         try {
             JsonNode columnsNode = mapper.readTree(response.body()).get("columns");
-            return mapper.readValue(columnsNode.toString(), mapper.getTypeFactory().constructCollectionType(List.class, STColumn.class));
+            return mapper.treeToValue(columnsNode, new TypeReference<>() {});
         } catch (JsonProcessingException e) {
             log.error("Couldn't parse JSON data: {}", e.getMessage(), e);
             return Collections.emptyList();

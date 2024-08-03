@@ -5,5 +5,5 @@ public record STColumn (
         String type,
         String name,
         String description,
-        STDataType data
+        Object data // STDataType - TODO: deserialize issue
 ) {}
