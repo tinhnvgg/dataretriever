@@ -39,4 +39,5 @@ class STTableNameQueryTest {
             log.info("Column #{} - {} - {}", ++i, column.name(), column.type());
         }
     }
+
 }
