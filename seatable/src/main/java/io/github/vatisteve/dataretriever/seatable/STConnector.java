@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.github.vatisteve.dataretriever.seatable.model.STBaseInfo;
-import io.github.vatisteve.dataretriever.seatable.model.STConnectionInfo;
+import io.github.vatisteve.dataretriever.seatable.model.metadata.STBase;
+import io.github.vatisteve.dataretriever.seatable.model.connection.STConnection;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,13 +30,13 @@ public abstract class STConnector {
 
     protected final HttpClient client;
     @Getter
-    protected STBaseInfo baseInfo;
+    protected STBase baseInfo;
     protected ObjectMapper mapper = new ObjectMapper();
 
     public static final String SEA_TABLE_PROPERTIES_PREFIX = "_";
     protected final UnaryOperator<String> stAuth = s -> String.format("Bearer %s", s);
 
-    protected STConnector(STConnectionInfo connectionInfo) throws IOException, InterruptedException {
+    protected STConnector(STConnection connectionInfo) throws IOException, InterruptedException {
         log.debug("Init connection to {} SeaTable version {}", connectionInfo.getUrl(), connectionInfo.getVersion());
         client  = HttpClient.newHttpClient();
         // add http client configuration if needed
@@ -47,7 +47,7 @@ public abstract class STConnector {
     /**
      * @see <a href='https://api.seatable.io/reference/getbasetokenwithapitoken'>Get Base token with API token</a>
      */
-    public void initBaseInfo(STConnectionInfo connectionInfo) throws IOException, InterruptedException {
+    public void initBaseInfo(STConnection connectionInfo) throws IOException, InterruptedException {
         URI uri = URI.create(connectionInfo.getUrl()).resolve("/api/v2.1/dtable/app-access-token/");
         HttpRequest request = HttpRequest.newBuilder()
             .uri(uri)
@@ -63,12 +63,12 @@ public abstract class STConnector {
         this.baseInfo = responseToBaseInfo(response.body());
     }
 
-    private STBaseInfo responseToBaseInfo(String baseInfoInString) throws JsonProcessingException {
+    private STBase responseToBaseInfo(String baseInfoInString) throws JsonProcessingException {
         JsonNode node = mapper.readTree(baseInfoInString);
         String accessToken = node.get("access_token").asText();
         String baseUuid = node.get("dtable_uuid").asText();
         String baseName = node.get("dtable_name").asText();
-        return new STBaseInfo(accessToken, baseUuid, baseName);
+        return new STBase(accessToken, baseUuid, baseName);
     }
 
     protected abstract CompletableFuture<ArrayNode> requestData();

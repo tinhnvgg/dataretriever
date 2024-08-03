@@ -1,4 +1,4 @@
-package io.github.vatisteve.dataretriever.seatable.model;
+package io.github.vatisteve.dataretriever.seatable.model.connection;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
-public class STTableNameConnectionInfo extends STConnectionInfo {
+public class STTableNameConnection extends STConnection {
     private String tableName;
     private long startRow;
     private int limit;

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.github.vatisteve.dataretriever.seatable.model.STSqlQueryConnectionInfo;
+import io.github.vatisteve.dataretriever.seatable.model.connection.STSqlQueryConnection;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -21,9 +21,9 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class STSqlQuery extends STConnector {
 
-    private final STSqlQueryConnectionInfo connectionInfo;
+    private final STSqlQueryConnection connectionInfo;
 
-    public STSqlQuery(STSqlQueryConnectionInfo connectionInfo) throws IOException, InterruptedException {
+    public STSqlQuery(STSqlQueryConnection connectionInfo) throws IOException, InterruptedException {
         super(connectionInfo);
         this.connectionInfo = connectionInfo;
     }
@@ -32,7 +32,7 @@ public class STSqlQuery extends STConnector {
     protected CompletableFuture<ArrayNode> requestData() {
         String urlFormat = "%s%s%s/sql";
         URI uri = URI.create(String.format(urlFormat,
-                connectionInfo.getUrl(), connectionInfo.getVersion().getTablePath(), baseInfo.getUuid()
+                connectionInfo.getUrl(), connectionInfo.getVersion().getTablePath(), baseInfo.uuid()
         ));
         ObjectNode queryBody = mapper.createObjectNode()
             .put("sql", connectionInfo.getQuery());
@@ -42,7 +42,7 @@ public class STSqlQuery extends STConnector {
         HttpRequest request = HttpRequest.newBuilder(uri)
             .header("Accept", "application/json")
             .header("Content-Type", "application/json")
-            .header("Authorization", stAuth.apply(baseInfo.getToken()))
+            .header("Authorization", stAuth.apply(baseInfo.token()))
             .POST(HttpRequest.BodyPublishers.ofString(queryBody.toString()))
             .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())

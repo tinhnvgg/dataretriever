@@ -3,7 +3,7 @@ package io.github.vatisteve.dataretriever.seatable;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import io.github.vatisteve.dataretriever.seatable.model.STTableNameConnectionInfo;
+import io.github.vatisteve.dataretriever.seatable.model.connection.STTableNameConnection;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -24,13 +24,13 @@ public class STTableNameQuery extends STConnector {
 
     private final int defaultBatchSize;
 
-    private final STTableNameConnectionInfo connectionInfo;
+    private final STTableNameConnection connectionInfo;
 
-    public STTableNameQuery(STTableNameConnectionInfo connectionInfo) throws IOException, InterruptedException {
+    public STTableNameQuery(STTableNameConnection connectionInfo) throws IOException, InterruptedException {
         this(connectionInfo, 1000); /* limit of SeaTable api response */
     }
 
-    public STTableNameQuery(STTableNameConnectionInfo connectionInfo, int defaultBatchSize) throws IOException, InterruptedException {
+    public STTableNameQuery(STTableNameConnection connectionInfo, int defaultBatchSize) throws IOException, InterruptedException {
         super(connectionInfo);
         this.connectionInfo = connectionInfo;
         this.defaultBatchSize = defaultBatchSize;
@@ -97,13 +97,13 @@ public class STTableNameQuery extends STConnector {
         URI uri = URI.create(
             String.format(uriFormat,
                     connectionInfo.getUrl(), connectionInfo.getVersion().getTablePath(),
-                    baseInfo.getUuid(), connectionInfo.getTableName(), start, limit
+                    baseInfo.uuid(), connectionInfo.getTableName(), start, limit
             )
         );
         HttpRequest request = HttpRequest.newBuilder()
             .uri(uri)
             .header("Accept", "application/json")
-            .header("Authorization", stAuth.apply(baseInfo.getToken()))
+            .header("Authorization", stAuth.apply(baseInfo.token()))
             .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
             .thenApply(res -> {
