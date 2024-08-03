@@ -5,20 +5,21 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.github.vatisteve.dataretriever.seatable.model.metadata.STBase;
 import io.github.vatisteve.dataretriever.seatable.model.connection.STConnection;
+import io.github.vatisteve.dataretriever.seatable.model.metadata.STBase;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.Serial;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.UnaryOperator;
 
 /**
  * @author tinhnv - Jul 26 2024
@@ -34,7 +35,14 @@ public abstract class STConnector {
     protected ObjectMapper mapper = new ObjectMapper();
 
     public static final String SEA_TABLE_PROPERTIES_PREFIX = "_";
-    protected final UnaryOperator<String> stAuth = s -> String.format("Bearer %s", s);
+
+    protected static String stAuth(String auth) {
+        return String.format("Bearer %s", auth);
+    }
+
+    protected static String encode(String s) {
+        return URLEncoder.encode(s, StandardCharsets.UTF_8).replace("+", "%20");
+    }
 
     protected STConnector(STConnection connectionInfo) throws IOException, InterruptedException {
         log.debug("Init connection to {} SeaTable version {}", connectionInfo.getUrl(), connectionInfo.getVersion());
@@ -52,7 +60,7 @@ public abstract class STConnector {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(uri)
             .header("Accept", "application/json")
-            .header("Authorization", stAuth.apply(connectionInfo.getApiKey()))
+            .header("Authorization", stAuth(connectionInfo.getApiKey()))
             .GET()
             .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -71,6 +79,7 @@ public abstract class STConnector {
         return new STBase(accessToken, baseUuid, baseName);
     }
 
+    public abstract STConnection getConnectionInfo();
     protected abstract CompletableFuture<ArrayNode> requestData();
     protected abstract ArrayNode detachResponse(String response);
     protected abstract CompletableFuture<String> transformData();
@@ -109,6 +118,16 @@ public abstract class STConnector {
         }
         @Serial
         private static final long serialVersionUID = -177508340932532651L;
+    }
+
+    protected STConnectException handleErrorResponse(HttpResponse<String> response) {
+        try {
+            JsonNode err = mapper.readTree(response.body())
+                    .get(getConnectionInfo().getVersion().getErrorMessageKey());
+            return new STConnectException(err.asText());
+        } catch (Exception e) {
+            return new STConnectException(response.statusCode());
+        }
     }
 
 }

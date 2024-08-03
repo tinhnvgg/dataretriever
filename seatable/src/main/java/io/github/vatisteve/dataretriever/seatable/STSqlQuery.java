@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.github.vatisteve.dataretriever.seatable.model.connection.STConnection;
 import io.github.vatisteve.dataretriever.seatable.model.connection.STSqlQueryConnection;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -19,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
  * @see <a href='https://api.seatable.io/reference/querysql'>Query with SQL</a>
  */
 @Slf4j
+@Getter
 public class STSqlQuery extends STConnector {
 
     private final STSqlQueryConnection connectionInfo;
@@ -42,20 +45,13 @@ public class STSqlQuery extends STConnector {
         HttpRequest request = HttpRequest.newBuilder(uri)
             .header("Accept", "application/json")
             .header("Content-Type", "application/json")
-            .header("Authorization", stAuth.apply(baseInfo.token()))
+            .header("Authorization", stAuth(baseInfo.token()))
             .POST(HttpRequest.BodyPublishers.ofString(queryBody.toString()))
             .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
             .thenApply(res -> {
                 if (res.statusCode() == 200) return res;
-                if (res.statusCode() != 400) throw new STConnectException(res.statusCode());
-                try {
-                    JsonNode err = mapper.readTree(res.body()).get("error_message");
-                    throw new STConnectException(err.asText());
-                } catch (Exception e) {
-                    throw new STConnectException("Response from SeaTable server with 400 status." +
-                        "Unable to parse error message: " + e.getMessage());
-                }
+                throw handleErrorResponse(res);
             })
             .thenApply(HttpResponse::body)
             .thenApply(this::detachResponse);

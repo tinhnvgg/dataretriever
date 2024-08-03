@@ -1,17 +1,19 @@
 package io.github.vatisteve.dataretriever.seatable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.github.vatisteve.dataretriever.seatable.model.connection.STTableNameConnection;
+import io.github.vatisteve.dataretriever.seatable.model.metadata.STColumn;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -20,6 +22,7 @@ import java.util.concurrent.CompletionStage;
  * @see <a href='https://api.seatable.io/reference/listrows'>List Rows</a>
  */
 @Slf4j
+@Getter
 public class STTableNameQuery extends STConnector {
 
     private final int defaultBatchSize;
@@ -97,19 +100,19 @@ public class STTableNameQuery extends STConnector {
         URI uri = URI.create(
             String.format(uriFormat,
                     connectionInfo.getUrl(), connectionInfo.getVersion().getTablePath(),
-                    baseInfo.uuid(), connectionInfo.getTableName(), start, limit
+                    baseInfo.uuid(), encode(connectionInfo.getTableName()), start, limit
             )
         );
         HttpRequest request = HttpRequest.newBuilder()
             .uri(uri)
             .header("Accept", "application/json")
-            .header("Authorization", stAuth.apply(baseInfo.token()))
+            .header("Authorization", stAuth(baseInfo.token()))
             .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
             .thenApply(res -> {
                 if (res.statusCode() == 200) return res;
 //                if (res.statusCode() == 401) {} TODO handle un-authorization status code
-                throw new STConnectException(res.statusCode());
+                throw handleErrorResponse(res);
             })
             .thenApply(HttpResponse::body)
             .thenApply(this::detachResponse);
@@ -132,4 +135,46 @@ public class STTableNameQuery extends STConnector {
         }
     }
 
+    /**
+     * @see <a href='https://api.seatable.io/reference/listcolumns-1'>List columns</a>
+     * @return List of {@link STColumn}
+     */
+    public List<STColumn> getColumns() {
+        String uriFormat = "%s%s%s/columns/?table_name=%s";
+        URI uri = URI.create(String.format(uriFormat,
+                connectionInfo.getUrl(),
+                connectionInfo.getVersion().getTablePath(),
+                baseInfo.uuid(),
+                encode(connectionInfo.getTableName())
+        ));
+        HttpRequest request = HttpRequest.newBuilder(uri)
+                .header("Accept", "application/json")
+                .header("Authorization", stAuth(baseInfo.token()))
+                .GET()
+                .build();
+        try {
+            return columnsResponse(client.send(request, HttpResponse.BodyHandlers.ofString()));
+        } catch (IOException e) {
+            log.error("Error occurred when calling get column list api: {}", e.getMessage(), e);
+        } catch (InterruptedException e) {
+            log.error("Interrupted exception occurred: {}", e.getMessage(), e);
+            Thread.currentThread().interrupt();
+        }
+        return Collections.emptyList();
+    }
+
+    private List<STColumn> columnsResponse(HttpResponse<String> response) {
+        if (response.statusCode() != 200) {
+            log.error("Request columns from table {} with the unexpected response: \nSTATUS{}\n{}",
+                    connectionInfo.getTableName(), response.statusCode(), response.body());
+            return Collections.emptyList();
+        }
+        try {
+            JsonNode columnsNode = mapper.readTree(response.body()).get("columns");
+            return mapper.readValue(columnsNode.toString(), mapper.getTypeFactory().constructCollectionType(List.class, STColumn.class));
+        } catch (JsonProcessingException e) {
+            log.error("Couldn't parse JSON data: {}", e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
 }
