@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.vatisteve.dataretriever.seatable.model.connection.STTableNameConnection;
 import io.github.vatisteve.dataretriever.seatable.model.metadata.STColumn;
 import lombok.Getter;
@@ -13,9 +14,15 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
+
+import static io.github.vatisteve.dataretriever.seatable.enums.STVersion.BEFORE_4_4;
 
 /**
  * @author tinhnv - Jul 26 2024
@@ -66,7 +73,24 @@ public class STTableNameQuery extends STConnector {
 
     @Override
     protected CompletableFuture<String> transformData() {
-        return requestData().thenApply(ArrayNode::toString);
+        CompletableFuture<ArrayNode> nodes = BEFORE_4_4.equals(connectionInfo.getVersion())
+                    ? requestData().thenApply(this::addNullColumns)
+                    : requestData();
+        return nodes.thenApply(ArrayNode::toString);
+    }
+
+    /**
+     * Connect and request SeaTable data
+     * @see <a href='https://forum.seatable.io/t/python-base-list-rows-does-not-return-all-columns/2176/8>Issue with SeaTable version before 4.4</a>
+     */
+    private ArrayNode addNullColumns(ArrayNode nodes) {
+        Set<String> columns = getColumns().stream().map(STColumn::name).collect(Collectors.toSet());
+        nodes.forEach(node -> {
+            Set<String> missingColumns = new HashSet<>(columns);
+            node.fieldNames().forEachRemaining(missingColumns::remove);
+            missingColumns.forEach(c -> ((ObjectNode) node).set(c, mapper.nullNode()));
+        });
+        return nodes;
     }
 
     private CompletionStage<ArrayNode> processNextBatchWithoutLimit(ArrayNode nodes, int offset) {
@@ -165,7 +189,7 @@ public class STTableNameQuery extends STConnector {
 
     private List<STColumn> columnsResponse(HttpResponse<String> response) {
         if (response.statusCode() != 200) {
-            log.error("Request columns from table {} with the unexpected response: \nSTATUS{}\n{}",
+            log.error("Request columns from table '{}' with the unexpected response: \nSTATUS{}\n{}",
                     connectionInfo.getTableName(), response.statusCode(), response.body());
             return Collections.emptyList();
         }
