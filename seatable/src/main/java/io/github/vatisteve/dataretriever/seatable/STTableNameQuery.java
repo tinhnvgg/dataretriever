@@ -123,9 +123,9 @@ public class STTableNameQuery extends STConnector {
         try {
             ArrayNode result = mapper.createArrayNode();
             JsonNode resNode = mapper.readTree(response);
-            Set<String> selectKeys = new HashSet<>();
+            Set<String> keysToRemove = new HashSet<>();
             resNode.get("rows").elements().forEachRemaining(n -> {
-                n = removeSeaTableProperties(n, selectKeys);
+                n = removeSeaTableProperties(n, keysToRemove);
                 result.add(n);
             });
             return result;

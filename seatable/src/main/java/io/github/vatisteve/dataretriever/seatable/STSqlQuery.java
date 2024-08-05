@@ -97,9 +97,9 @@ public class STSqlQuery extends STConnector {
 
     private ArrayNode sqlQueryStatementResult(Iterator<JsonNode> resultNodes) {
         ArrayNode result = mapper.createArrayNode();
-        Set<String> selectKeys = new HashSet<>();
+        Set<String> keysToRemove = new HashSet<>();
         resultNodes.forEachRemaining(n -> {
-            n = removeSeaTableProperties(n, selectKeys);
+            n = removeSeaTableProperties(n, keysToRemove);
             result.add(n);
         });
         return result;

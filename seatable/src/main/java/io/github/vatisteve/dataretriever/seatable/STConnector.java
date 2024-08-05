@@ -102,14 +102,18 @@ public abstract class STConnector {
         return getData().join();
     }
 
-
-    protected static JsonNode removeSeaTableProperties(JsonNode n, Set<String> keys) {
-        if (keys.isEmpty()) {
-            n.fieldNames().forEachRemaining(f -> {
-                if (!f.startsWith(SEA_TABLE_PROPERTIES_PREFIX)) keys.add(f);
+    /**
+     * @param node          The {@link JsonNode}
+     * @param keysToRemove  Set of keys to remove from {@code node},
+     *                      Pass the empty set to detect SeaTable keys and cache them
+     */
+    protected static JsonNode removeSeaTableProperties(JsonNode node, Set<String> keysToRemove) {
+        if (keysToRemove.isEmpty()) {
+            node.fieldNames().forEachRemaining(f -> {
+                if (f.startsWith(SEA_TABLE_PROPERTIES_PREFIX)) keysToRemove.add(f);
             });
         }
-        return ((ObjectNode) n).retain(keys);
+        return ((ObjectNode) node).remove(keysToRemove);
     }
 
     public static class STConnectException extends RuntimeException {
